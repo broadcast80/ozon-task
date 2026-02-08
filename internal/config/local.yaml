@@ -1,0 +1,9 @@
+http_server:
+  host: "localhost"
+  port: "8080"
+  timeout: 4s
+  idle_timeout: 60s
+postgres_config:
+  host: "db"
+  port: "5432"
+  database: "ozon"

@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:12-alpine
+    restart: on-failure
+    volumes:
+      - ./internal/pkg/db/migrations/:/docker-entrypoint-initdb.d/
+    environment:
+      POSTGRES_DB: ozon
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ozon"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    ports:
+      - "5432:5432"
+
+
+  app:
+    container_name: ozon
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: ozon.Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ENV_PATH: "/app/.env"
+      CONFIG_PATH: "/app/internal/config/local.yaml"
+
+volumes:
+  posgresdb-data:
+    driver: local
