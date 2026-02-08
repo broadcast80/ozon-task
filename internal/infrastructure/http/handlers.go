@@ -81,9 +81,4 @@ func (h *handlers) Create(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 
 	return
-
-}
-
-func main() {
-	// router := http.NewServeMux()
 }
