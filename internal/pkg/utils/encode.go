@@ -15,5 +15,3 @@ func Encode(size int, charset string) string {
 
 	return string(b)
 }
-
-// может быть проблема с дублями

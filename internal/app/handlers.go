@@ -49,7 +49,6 @@ func (h *handlers) MapHandlers() error {
 
 func (h *handlers) Create(w http.ResponseWriter, r *http.Request) {
 
-	// ...
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.logger.Error(err.Error())
@@ -63,7 +62,6 @@ func (h *handlers) Create(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error(err.Error())
 		http.Error(w, "failed to unmarshal request", http.StatusBadRequest)
 	}
-	// ...
 
 	link, err := h.service.CutLink(r.Context(), request.URL)
 	if err != nil {
@@ -81,7 +79,6 @@ func (h *handlers) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *handlers) Get(w http.ResponseWriter, r *http.Request) {
 
-	// ...
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.logger.Error(err.Error())
@@ -95,7 +92,6 @@ func (h *handlers) Get(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error(err.Error())
 		http.Error(w, "failed to unmarshal request", http.StatusBadRequest)
 	}
-	// ...
 
 	link, err := h.service.GetFullLink(r.Context(), request.Alias)
 	if err != nil {
