@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/broadcast80/ozon-task/internal/pkg/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -13,8 +14,6 @@ import (
 type repository struct {
 	client *pgxpool.Pool
 }
-
-// func NewRepository(client *pgxpool.Pool)
 
 func New(client *pgxpool.Pool) *repository {
 	return &repository{client: client}
@@ -60,8 +59,11 @@ func (r *repository) Get(ctx context.Context, alias string) (string, error) {
 
 	row := r.client.QueryRow(ctx, q, alias)
 
-	err := row.Scan(url)
+	err := row.Scan(&url)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", models.ErrNotFound
+		}
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			pgErr = err.(*pgconn.PgError)
@@ -81,10 +83,11 @@ func (r *repository) Get(ctx context.Context, alias string) (string, error) {
 	return url, nil
 }
 
-func (r *repository) ExistsURL(ctx context.Context, url string) (bool, error) {
+func (r *repository) URLExists(ctx context.Context, url string) (bool, error) {
 	var exists bool
 	err := r.client.QueryRow(ctx,
 		`SELECT EXISTS(SELECT 1 FROM link WHERE url = $1 LIMIT 1)`,
+		url,
 	).Scan(&exists)
 	if err != nil {
 		return false, err

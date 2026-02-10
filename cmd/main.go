@@ -10,7 +10,7 @@ import (
 
 	"github.com/broadcast80/ozon-task/config"
 	"github.com/broadcast80/ozon-task/domain/link"
-	infrastracture "github.com/broadcast80/ozon-task/internal/app"
+	app "github.com/broadcast80/ozon-task/internal/app"
 	"github.com/broadcast80/ozon-task/internal/pkg/utils"
 	inmemory "github.com/broadcast80/ozon-task/internal/repository/in_memory"
 	"github.com/broadcast80/ozon-task/internal/repository/postgresql"
@@ -51,7 +51,7 @@ func main() {
 
 	router := http.NewServeMux()
 
-	handlers := infrastracture.New(router, service, log)
+	handlers := app.New(router, service, log)
 
 	if err = handlers.MapHandlers(); err != nil {
 		log.Error("failed to map handlers")
@@ -80,7 +80,7 @@ func newRepository(ctx context.Context, cfg config.Config, log *slog.Logger) use
 	case "postgres":
 		postgreSQLClient, err := utils.NewClient(ctx, 5, cfg.PostgresConfig)
 		if err != nil {
-			log.Error("failed to init storage", "error", err)
+			log.Error("failed to init storage", "Error", err.Error())
 			os.Exit(1)
 		}
 		repository := postgresql.New(postgreSQLClient)
@@ -91,7 +91,7 @@ func newRepository(ctx context.Context, cfg config.Config, log *slog.Logger) use
 		return repository
 
 	default:
-		log.Error("uknown STORAGE_TYPE", storageType)
+		log.Error("uknown STORAGE_TYPE", "STORAGE_TYPE", storageType)
 		return nil
 	}
 }

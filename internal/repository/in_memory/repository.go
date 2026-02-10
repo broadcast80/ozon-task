@@ -2,19 +2,22 @@ package inmemory
 
 import (
 	"context"
-	"fmt"
 	"sync"
+
+	"github.com/broadcast80/ozon-task/internal/pkg/models"
 )
 
 type repository struct {
-	store map[string]string
-	mu    sync.RWMutex
+	aliasToURL map[string]string
+	urlToAlias map[string]string
+	mu         sync.RWMutex
 }
 
 func New(storeSize int) *repository {
 	return &repository{
-		store: make(map[string]string, storeSize),
-		mu:    sync.RWMutex{},
+		aliasToURL: make(map[string]string, storeSize),
+		urlToAlias: make(map[string]string, storeSize),
+		mu:         sync.RWMutex{},
 	}
 }
 
@@ -22,13 +25,13 @@ func (r *repository) Create(ctx context.Context, url string, alias string) error
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.store[alias]; ok {
-		return fmt.Errorf("url already exists")
+	if _, ok := r.aliasToURL[alias]; ok {
+		return models.ErrDuplicate
 	}
 
-	// проверка существования такого алиаса
+	r.aliasToURL[alias] = url
+	r.urlToAlias[url] = alias
 
-	r.store[alias] = url
 	return nil
 
 }
@@ -37,10 +40,18 @@ func (r *repository) Get(ctx context.Context, alias string) (string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	url, ok := r.store[alias]
+	url, ok := r.aliasToURL[alias]
 	if !ok {
-		return "", fmt.Errorf("not found")
+		return "", models.ErrNotFound
 	}
 
 	return url, nil
+}
+
+func (r *repository) URLExists(ctx context.Context, url string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	_, ok := r.urlToAlias[url]
+	return ok, nil
 }

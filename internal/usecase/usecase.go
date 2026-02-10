@@ -14,6 +14,7 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_
 type RepositoryInterface interface {
 	Create(ctx context.Context, url string, alias string) error
 	Get(ctx context.Context, alias string) (string, error)
+	URLExists(ctx context.Context, url string) (bool, error)
 }
 
 type service struct {
@@ -30,14 +31,14 @@ func New(repository RepositoryInterface, logger *slog.Logger) *service {
 
 func (s *service) GetAlias(ctx context.Context, url string) (string, error) {
 
-	// found, err := s.repository.ExistsURL(ctx, url)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// if found {
-	// 	return "", errors.New("url already exists")
-	// }
+	found, err := s.repository.URLExists(ctx, url)
+	if err != nil {
+		s.logger.Error(err.Error())
+		return "", err
+	}
+	if found {
+		return "", models.ErrDuplicate
+	}
 
 	alias := utils.Encode(10, charset)
 
@@ -47,6 +48,7 @@ func (s *service) GetAlias(ctx context.Context, url string) (string, error) {
 			alias = utils.Encode(10, charset)
 			continue
 		} else if err != nil {
+			s.logger.Error(err.Error())
 			return "", err
 		}
 

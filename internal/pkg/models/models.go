@@ -7,12 +7,5 @@ type Request struct {
 	Alias string `json:"alias"`
 }
 
-type ResponseURL struct {
-	URL string `json:"url"`
-}
-
-type ResponseAlias struct {
-	Alias string `json:"alias"`
-}
-
 var ErrDuplicate = errors.New("duplicate url")
+var ErrNotFound = errors.New("no such url")
