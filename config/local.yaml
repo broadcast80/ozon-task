@@ -7,3 +7,5 @@ postgres_config:
   host: "db"
   port: "5432"
   database: "ozon"
+inmemory_config:
+  size: 100000

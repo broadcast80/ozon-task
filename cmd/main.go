@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/broadcast80/ozon-task/internal/application"
-	"github.com/broadcast80/ozon-task/internal/config"
-	infrastracture "github.com/broadcast80/ozon-task/internal/infrastructure/http"
-	"github.com/broadcast80/ozon-task/internal/infrastructure/repository"
-	"github.com/broadcast80/ozon-task/internal/pkg/db/postgresql"
+	"github.com/broadcast80/ozon-task/config"
+	"github.com/broadcast80/ozon-task/domain/link"
+	infrastracture "github.com/broadcast80/ozon-task/internal/app"
+	"github.com/broadcast80/ozon-task/internal/pkg/utils"
+	inmemory "github.com/broadcast80/ozon-task/internal/repository/in_memory"
+	"github.com/broadcast80/ozon-task/internal/repository/postgresql"
+	"github.com/broadcast80/ozon-task/internal/usecase"
 	"github.com/joho/godotenv"
 )
 
@@ -20,7 +22,7 @@ func main() {
 
 	envPath := os.Getenv("ENV_PATH")
 	if envPath == "" {
-		print("posos")
+		print("ENV_PATH required")
 		return
 	}
 
@@ -41,19 +43,15 @@ func main() {
 
 	ctx := context.TODO()
 
-	postgreSQLClient, err := postgresql.NewClient(ctx, 5, cfg.PostgresConfig)
-	if err != nil {
-		log.Error("failed to init storage", "error", err)
-		os.Exit(1)
-	}
+	repository := newRepository(ctx, *cfg, log)
 
-	repository := repository.New(postgreSQLClient)
+	dataProvider := usecase.New(repository, log)
 
-	service := application.New(repository)
+	service := link.NewShortener(dataProvider)
 
 	router := http.NewServeMux()
 
-	handlers := infrastracture.New(cfg, router, service)
+	handlers := infrastracture.New(router, service, log)
 
 	if err = handlers.MapHandlers(); err != nil {
 		log.Error("failed to map handlers")
@@ -62,11 +60,38 @@ func main() {
 	errs := make(chan error, 2)
 
 	go func() {
-		errs <- handlers.ListenAndServe(cfg.HTTPServer)
+		errs <- handlers.ListenAndServe(cfg.HTTPServer.Port)
 	}()
 
 	err = <-errs
 	if err != nil {
 		fmt.Printf("Werr %s", err.Error())
+	}
+}
+
+func newRepository(ctx context.Context, cfg config.Config, log *slog.Logger) usecase.RepositoryInterface {
+	storageType := os.Getenv("STORAGE_TYPE")
+	if storageType == "" {
+		storageType = "inmemory"
+	}
+
+	switch storageType {
+
+	case "postgres":
+		postgreSQLClient, err := utils.NewClient(ctx, 5, cfg.PostgresConfig)
+		if err != nil {
+			log.Error("failed to init storage", "error", err)
+			os.Exit(1)
+		}
+		repository := postgresql.New(postgreSQLClient)
+		return repository
+
+	case "inmemory":
+		repository := inmemory.New(cfg.InMemoryConfig.Size)
+		return repository
+
+	default:
+		log.Error("uknown STORAGE_TYPE", storageType)
+		return nil
 	}
 }

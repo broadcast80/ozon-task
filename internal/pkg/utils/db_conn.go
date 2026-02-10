@@ -1,4 +1,4 @@
-package postgresql
+package utils
 
 import (
 	"context"
@@ -6,15 +6,12 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/broadcast80/ozon-task/internal/config"
+	"github.com/broadcast80/ozon-task/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// связность уменьшить??
-// type PostgresConfig struct
-
 func NewClient(ctx context.Context, maxAttempts int, sc config.PostgresConfig) (pool *pgxpool.Pool, err error) {
-	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", sc.Username, sc.Password, sc.Host, sc.Port, sc.Database)
+	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", sc.Username, sc.Password, sc.Host, sc.Port, sc.Database) // оч плохо. стрингбилдером
 	err = retry.Do(
 		func() error {
 			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)

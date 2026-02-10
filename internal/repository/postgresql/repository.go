@@ -1,11 +1,11 @@
-package repository
+package postgresql
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	"github.com/broadcast80/ozon-task/internal/domain"
+	"github.com/broadcast80/ozon-task/internal/pkg/models"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,16 +20,19 @@ func New(client *pgxpool.Pool) *repository {
 	return &repository{client: client}
 }
 
-func (r *repository) Create(ctx context.Context, link domain.Link) error {
+func (r *repository) Create(ctx context.Context, url string, alias string) error {
 	q := `
-		INSERT INTO link (url, alias, created_at) 
-		VALUES ($1, $2, $3)
+		INSERT INTO link (url, alias) 
+		VALUES ($1, $2)
 	`
 
-	_, err := r.client.Exec(ctx, q, link.URL, link.Alias, link.CreatedAt)
+	_, err := r.client.Exec(ctx, q, url, alias)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.Is(err, pgErr) {
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				return models.ErrDuplicate
+			}
 			pgErr = err.(*pgconn.PgError)
 			newErr := fmt.Errorf(
 				"SQL Error: %s, Detail: %s, Where: %s, Code: %s, SQLState: %s",
@@ -60,7 +63,7 @@ func (r *repository) Get(ctx context.Context, alias string) (string, error) {
 	err := row.Scan(url)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.Is(err, pgErr) {
+		if errors.As(err, &pgErr) {
 			pgErr = err.(*pgconn.PgError)
 			newErr := fmt.Errorf(
 				"SQL Error: %s, Detail: %s, Where: %s, Code: %s, SQLState: %s",
@@ -76,4 +79,16 @@ func (r *repository) Get(ctx context.Context, alias string) (string, error) {
 	}
 
 	return url, nil
+}
+
+func (r *repository) ExistsURL(ctx context.Context, url string) (bool, error) {
+	var exists bool
+	err := r.client.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM link WHERE url = $1 LIMIT 1)`,
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }

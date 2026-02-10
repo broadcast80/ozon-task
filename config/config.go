@@ -11,6 +11,7 @@ import (
 type Config struct {
 	HTTPServer     `yaml:"http_server"`
 	PostgresConfig `yaml:"postgres_config"`
+	InMemoryConfig `yaml:"inmemory_config"`
 }
 
 type HTTPServer struct {
@@ -26,6 +27,10 @@ type PostgresConfig struct {
 	Database string `yaml:"database"`
 	Username string `env:"DB_USERNAME"`
 	Password string `env:"DB_PASSWORD"`
+}
+
+type InMemoryConfig struct {
+	Size int `yaml:"size"`
 }
 
 func MustLoad() *Config {

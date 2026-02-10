@@ -3,6 +3,6 @@ CREATE TABLE IF NOT EXISTS public.link (
 	url text NOT NULL,
 	alias text NOT NULL,
 	created_at timestamp DEFAULT CURRENT_DATE NOT NULL,
-	CONSTRAINT url_unique UNIQUE (url),
+	CONSTRAINT alias_unique UNIQUE (alias),
 	CONSTRAINT user_pkey PRIMARY KEY (id)
 )

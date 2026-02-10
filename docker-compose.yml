@@ -3,9 +3,10 @@ version: "3.8"
 services:
   db:
     image: postgres:12-alpine
+    profiles: ["postgres"]
     restart: on-failure
     volumes:
-      - ./internal/pkg/db/migrations/:/docker-entrypoint-initdb.d/
+      - ./db/migrations/:/docker-entrypoint-initdb.d/
     environment:
       POSTGRES_DB: ozon
       POSTGRES_USER: ${DB_USERNAME}
@@ -26,6 +27,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+        required: false
     env_file:
       - .env
     build:
@@ -35,8 +37,9 @@ services:
       - "8080:8080"
     environment:
       ENV_PATH: "/app/.env"
-      CONFIG_PATH: "/app/internal/config/local.yaml"
+      CONFIG_PATH: "/app/config/local.yaml"
+      STORAGE_TYPE: "inmemory"
 
 volumes:
-  posgresdb-data:
+  postgresdb-data:
     driver: local
